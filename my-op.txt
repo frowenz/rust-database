@@ -1,0 +1,59 @@
+-A brief description of your solution. In particular, include what design
+decisions you made and explain why. This is only needed for those parts of your
+solutions that had some significant design work (e.g. how you implemented and handled
+state in the aggregate and join operators). 
+
+1. Nested join
+    I added in:
+
+    > left_tuple: Option<Tuple>
+
+    to my join structure in order to keep track of the current tuple in the left table
+    which we are finding matches for. My solution was pretty straight forward: compare
+    the current left tuple to each of the right tuples. Once we exhaust right tuples, 
+    got to the next left tuple and repeat until we have found all matches.
+
+2. Hash join
+    I added in:
+
+    >hashmap: HashMap<Field, Tuple>,
+
+    This hashmap takes in the field we are joining on from each right tuple and checks
+    if we have seen some left tuple with this field. Hence, I first popuate the
+    hashmap with each left tuple and then iterate through all right tuples.
+
+
+3. Aggregator 
+
+I added in 
+
+> hashmap: HashMap<Vec<Field>, Vec<Field>>,
+> has_avg: bool,
+
+to the aggregator structure. Hashmap maps some set of fields (i.e. a group key) to some
+current aggregation fields for that group. As we merge in each tuple, we update the fields 
+values accordingly. The main tricky case is avg operations.
+
+>has_bool is used to keep track of whether any of the aggregation fields is an average
+
+This is useful for solving the "average problem" which is that you cannot update the average as you
+merge in tuples because the average must be an i32. 
+
+Hence, if when asked to perform compute an average, sum is stored in the average field and an 
+extra count aggregation field is added to the aggregation fields in the hashmap. When we are asked to
+return the average, we divide the sum in the average field by the count at the end. (Also, making sure to 
+ignore the count at the end when building output tuples.
+
+- How long you roughly spent on the milestone, and what would have
+liked/disliked on the milestone. (<-- note:"what would have"?)
+
+I probably spent 10 hours on this one. I liked figuring out how to handle all the cases for aggregation.
+The size of these problems was large enough to allow for creative solutions yet small enough to not be 
+overwhelming which I liked.
+
+I have now spend 2 hours trying to beat the join_right benchmark.
+
+- If you know some part of the milestone is incomplete, write up what parts are
+not working, how close you think you are, and what part(s) you got stuck on.
+
+N/A

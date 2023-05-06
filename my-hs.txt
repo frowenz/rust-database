@@ -1,0 +1,61 @@
+ -  A brief describe of your solution, in particular what design decisions you took and why. This is only needed for part of your 
+ solutions that had some significant work (e.g. just returning a counter or a pass through function has no design decision).
+
+> HEAPFILE
+My heapfile stored the following additional things: 
+    pub file: Arc<RwLock<File>>
+    pub file_path: Arc<RwLock<PathBuf>>
+    pub num_pages: Arc<RwLock<PageId>>
+
+I decided to include file_path to make serializing easier. I stored pages in order of page_id to make them easy to iterate through. 
+This choice and my inclusion of num_pages gave me the ability to quickly deduce the last page.
+
+>HEAPFILEITERATOR
+pub struct HeapFileIterator {
+    hf: Arc<HeapFile>,
+    page_id: PageId,
+    page_iter: Option<PageIntoIter>
+}
+
+Page_id represents the current page being iterated through and page_iter is the iterator of the current page. I thought my solution of
+using Option<PageIntoIter> was clever since it allowed me to only have to worry about whether a page was valid in one place. When the 
+HeapFileIterator is initialized and when we have existed all tuples in a page, page_iter gets set to None.
+
+>STORAGE_MANAGER
+
+All I added to my storage_manager was:
+    hf_dict: RwLock<HashMap<ContainerId, Arc<HeapFile>>>,
+
+This was a pretty obvious choice in order to map containers and heapfiles. 
+
+For my insert_value function, I iterate through each page and try to add the value into each page. If there is not space in
+any page, I create a new page. I briefly considered adding some way to keep track of the amount of free space in each page but
+decided against it since I didn't want to mess with my page.rs. If I fail to beat the benchmarks, this is something I will do.
+In hindsight, this is something I wish I had included in my page design, so I didn't have to manually calculate free space per
+page per insert.
+
+For my shutdown, I took a bunch of inspiration from the memstore shudown and wrote a load function to help. I also added the
+following structure in order make serialization possible:
+
+pub(crate) struct HeapFileMetadata {
+    pub file_path: PathBuf,
+    pub num_pages: PageId,
+}
+
+Essentially, when shutting down I write a little metadata file with this information into the storage manager directory for each 
+heapfile. On startup, I collect all of these files and use them to rebuild the container to heapfile hashmap.
+
+- How long you roughly spent on the milestone, and what would have liked/disliked on the milestone.
+
+My rough guess is 25-30 hours though I am not really sure. I got very stuck on shutdown and spent 5-10 hours getting
+it working. I was quite conceptually confused about what needed to be stored and how to do it.
+
+I disliked the sparsity of pre-written tests though I understand that was intentional. I liked writing heapfileiter 
+and figuring how to use log to debug.
+
+ I also thought it was cool how this assignment moved up a level in abstraction above page. This helped me understand what makes a 
+ good page a lot more.
+
+- If you know some part of the milestone is incomplete, write up what parts are not working, how close you think you are, and what part(s) you got stuck on.
+
+N/A
